@@ -3,6 +3,15 @@ import { PORT } from "./config/index.js";
 import { connectDB } from "./db/dbMaster.js";
 import logger from "./utils/logger.js";
 
+process.on("uncaughtException", (error) => {
+  logger.error("❌ Uncaught Exception:", error);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (error) => {
+  logger.error("❌ Unhandled Promise Rejection:", error);
+});
+
 connectDB()
   .then(() => {
     app.listen(PORT, () => {

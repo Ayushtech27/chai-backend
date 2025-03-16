@@ -1,6 +1,6 @@
 import app from "./app.js";
 import { PORT } from "./config/index.js";
-import { connectDB } from "./db/dbMaster.js";
+import db from "./db/dbMaster.js";
 import logger from "./utils/logger.js";
 
 process.on("uncaughtException", (error) => {
@@ -12,12 +12,13 @@ process.on("unhandledRejection", (error) => {
   logger.error("❌ Unhandled Promise Rejection:", error);
 });
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      logger.debug(`🚀 Server is running at port: ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    logger.error(`❌ MongoDB connection failed: ${error}`);
+db.once("connected", () => {
+  app.listen(PORT, () => {
+    logger.debug(`🚀 Server is running at port: ${PORT}`);
   });
+});
+
+db.on("error", (error) => {
+  logger.error(`❌ MongoDB connection failed: ${error.message}`);
+  process.exit(1);
+});

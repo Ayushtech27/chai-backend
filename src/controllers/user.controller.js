@@ -5,6 +5,7 @@ import {
   loginUserService,
   logoutUserService,
   registerUserService,
+  refreshAccessTokenService,
 } from "../services/user.service.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
@@ -81,4 +82,28 @@ export const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged out successfully"));
+});
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+  const { accessToken, newRefreshToken } =
+    await refreshAccessTokenService(incomingRefreshToken);
+  const options = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Strict",
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", newRefreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        { accessToken, refreshToken: newRefreshToken },
+        "Access token refreshed"
+      )
+    );
 });

@@ -1,7 +1,10 @@
 import { REFRESH_TOKEN_SECRET } from "../config/index.js";
 import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
-import uploadOnCloudinary from "../utils/cloudinary.js";
+import {
+  deleteFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -119,5 +122,131 @@ export const refreshAccessTokenService = async (incomingRefreshToken) => {
     return { accessToken, newRefreshToken };
   } catch (error) {
     throw new ApiError(401, error?.message || "Invalid refresh token");
+  }
+};
+
+export const changeCurrentPasswordService = async (
+  oldPassword,
+  newPassword,
+  user
+) => {
+  if (!oldPassword) {
+    throw new ApiError(401, "oldPassword is required");
+  }
+  if (!newPassword) {
+    throw new ApiError(401, "newPassword is required");
+  }
+  if (!user) {
+    throw new ApiError(401, "user not identified");
+  }
+  try {
+    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+    if (!isPasswordCorrect) {
+      throw new ApiError(400, "Invalid old password");
+    }
+    user.password = newPassword;
+    await user.save({ validateBeforeSave: false });
+  } catch (error) {
+    throw new ApiError(
+      401,
+      error?.message || "something went wrong while changing the password"
+    );
+  }
+};
+
+export const updateAccountDetailsService = async (fullName, email, userId) => {
+  if (!fullName || !email) {
+    throw new ApiError(400, "All fields are required");
+  }
+  if (!userId) {
+    throw new ApiError(400, "userId not found");
+  }
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          fullName,
+          email,
+        },
+      },
+      { new: true }
+    ).select("-password");
+    return user;
+  } catch (error) {
+    throw new ApiError(
+      401,
+      error?.message ||
+        "something went wrong while updating the account details"
+    );
+  }
+};
+
+export const updateUserAvatarService = async (avatarLocalPath, userId) => {
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing");
+  }
+  try {
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found");
+    const oldAvatarUrl = user.avatar;
+    if (oldAvatarUrl) {
+      await deleteFromCloudinary(user.avatar);
+    }
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    if (!avatar.url) {
+      throw new ApiError(400, "Error while uploading on avatar");
+    }
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          avatar: avatar.url,
+        },
+      },
+      { new: true }
+    ).select("-password");
+    return updatedUser;
+  } catch (error) {
+    throw new ApiError(
+      401,
+      error?.message || "something went wrong while updating the avatar"
+    );
+  }
+};
+
+export const updateUserCoverImageService = async (
+  coverImageLocalPath,
+  userId
+) => {
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover Image file is missing");
+  }
+  try {
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found");
+    const oldCoverImageUrl = user.coverImage;
+    if (oldCoverImageUrl) {
+      await deleteFromCloudinary(user.coverImage);
+    }
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    if (!coverImage.url) {
+      throw new ApiError(400, "Error while uploading on cover image");
+    }
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          coverImage: coverImage.url,
+        },
+      },
+      { new: true }
+    ).select("-password");
+    return updatedUser;
+  } catch (error) {
+    throw new ApiError(
+      401,
+      error?.message || "something went wrong while updating the cover image"
+    );
   }
 };

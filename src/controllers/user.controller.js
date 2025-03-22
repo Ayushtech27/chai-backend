@@ -6,6 +6,10 @@ import {
   logoutUserService,
   registerUserService,
   refreshAccessTokenService,
+  changeCurrentPasswordService,
+  updateAccountDetailsService,
+  updateUserAvatarService,
+  updateUserCoverImageService,
 } from "../services/user.service.js";
 
 export const registerUser = asyncHandler(async (req, res) => {
@@ -105,5 +109,57 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         { accessToken, refreshToken: newRefreshToken },
         "Access token refreshed"
       )
+    );
+});
+
+export const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const user = await User.findById(req.user?._id);
+  await changeCurrentPasswordService(oldPassword, newPassword, user);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"));
+});
+
+export const getCurrentUser = asyncHandler(async (req, res) => {
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "current user fetched successfully"));
+});
+
+export const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullName, email } = req.body;
+  const userId = req.user?._id;
+  const user = await updateAccountDetailsService(fullName, email, userId);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Account details updated successfully"));
+});
+
+export const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  const userId = req.user?._id;
+  const updatedUser = await updateUserAvatarService(avatarLocalPath, userId);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Avatar image updated successfully")
+    );
+});
+
+export const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+  const userId = req.user?._id;
+  const updatedUser = await updateUserCoverImageService(
+    coverImageLocalPath,
+    userId
+  );
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedUser, "Cover image updated successfully")
     );
 });

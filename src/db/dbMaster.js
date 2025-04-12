@@ -9,8 +9,8 @@ import logger from "../utils/logger.js";
 const db = mongoose.createConnection(
   `mongodb+srv://${MASTER_DB_USERNAME}:${MASTER_DB_PASSWORD}@cluster0.co4kp.mongodb.net/${MASTER_DB_NAME}`,
   {
-    maxPoolSize: 200,
-    minPoolSize: 200,
+    maxPoolSize: 100,
+    minPoolSize: 10,
     serverApi: { version: "1", strict: false, deprecationErrors: true },
     autoCreate: true,
     autoIndex: true,

@@ -3,13 +3,16 @@ import { PORT } from "./config/index.js";
 import db from "./db/dbMaster.js";
 import logger from "./utils/logger.js";
 
-process.on("uncaughtException", (error) => {
+process.on("uncaughtException", async (error) => {
   logger.error("❌ Uncaught Exception:", error);
+  await shutdownGracefully();
   process.exit(1);
 });
 
-process.on("unhandledRejection", (error) => {
-  logger.error("❌ Unhandled Promise Rejection:", error);
+process.on("unhandledRejection", async (reason) => {
+  logger.error("❌ Unhandled Promise Rejection:", reason);
+  await shutdownGracefully();
+  process.exit(1);
 });
 
 db.once("connected", () => {
